@@ -1,0 +1,1 @@
+java -jar ../lib/sync-file-1.0-SNAPSHOT.jar -c ../conf/config.yml
