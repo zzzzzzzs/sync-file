@@ -7,6 +7,7 @@ import java.util.List;
 @Data
 public class Config {
   private String monitorFile;
+  private List<String> exclude;
   private String ip;
   private int port;
   private String user;

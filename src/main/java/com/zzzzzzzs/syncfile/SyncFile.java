@@ -6,7 +6,6 @@ import cn.hutool.core.io.watch.SimpleWatcher;
 import cn.hutool.core.io.watch.WatchMonitor;
 import cn.hutool.extra.ssh.JschUtil;
 import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 import org.yaml.snakeyaml.Yaml;
 
@@ -14,24 +13,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
+// TODO 在 SyncFile 中的 WatchMonitor 调用 SSHUtil 中的 shellCmd 方法，InputStream 不起作用
 public class SyncFile {
 
-  public static void execCmd(List<String> config, Session session, String name) {
-    config.stream()
-        .filter(cmd -> cmd != null)
-        .forEach(
-            cmd -> {
-              String exec = JschUtil.exec(session, cmd, Charset.forName("UTF-8"));
-              System.out.println(name + ":" + cmd + "#" + exec);
-            });
+  public static void execCmd(List<String> config, SSHUtil ssh, String name) {
+    synchronized (SSHUtil.class) {
+      System.out.println("++++++++++++++++++++++++++++++");
+      System.out.println(name + ":");
+      config.stream().filter(cmd -> cmd != null).forEach(cmd -> ssh.shellCmd(cmd));
+      System.out.println("------------------------------");
+    }
   }
 
   public static void main(String[] args) throws FileNotFoundException {
@@ -63,32 +60,37 @@ public class SyncFile {
       }
     }
     File file = FileUtil.file(workspaceConf.getMonitorFile());
-    Session session =
-        JschUtil.getSession(
+    SSHUtil ssh =
+        new SSHUtil(
+            workspaceConf.getUser(),
             workspaceConf.getIp(),
             workspaceConf.getPort(),
-            workspaceConf.getUser(),
             workspaceConf.getPassword());
+    ssh.connect();
+//    ssh.shellCmd("ls -lh");
     // start cmd
-    execCmd(workspaceConf.getStartCmd(), session, "start cmd");
+    execCmd(workspaceConf.getStartCmd(), ssh, "start cmd");
 
-    ChannelSftp channelSftp = JschUtil.openSftp(session, 5000);
+    ChannelSftp channelSftp = JschUtil.openSftp(ssh.getSession(), 5000);
     System.out.println("start watch");
     WatchMonitor.createAll(
             file,
             new SimpleWatcher() {
               @Override
               public void onModify(WatchEvent<?> event, Path currentPath) {
-                try {
-                  // front cmd
-                  execCmd(workspaceConf.getFrontCmd(), session, "front cmd");
-                  channelSftp.put(
-                      file.getAbsolutePath(), workspaceConf.getUploadPath() + file.getName());
-                  System.out.println("\033[32m" + "sync success" + "\033[0m");
-                  // back cmd
-                  execCmd(workspaceConf.getBackCmd(), session, "back cmd");
-                } catch (SftpException e) {
-                  e.printStackTrace();
+                synchronized (SSHUtil.class) {
+                  try {
+                    // front cmd
+                    execCmd(workspaceConf.getFrontCmd(), ssh, "front cmd");
+                    // sync
+                    channelSftp.put(
+                        file.getAbsolutePath(), workspaceConf.getUploadPath() + file.getName());
+                    System.out.println("\033[32m" + "sync success" + "\033[0m");
+                    // back cmd
+                    execCmd(workspaceConf.getBackCmd(), ssh, "back cmd");
+                  } catch (SftpException e) {
+                    e.printStackTrace();
+                  }
                 }
               }
             })

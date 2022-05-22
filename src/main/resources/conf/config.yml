@@ -1,7 +1,6 @@
 workspace:
   test:
-#    monitorFile: C:\Users\simeitol\Desktop\1.txt
-    monitorFile: C:\Users\simeitol\Desktop\sync-file-bin.zip
+    monitorFile: C:\Users\simeitol\Desktop\1.txt
     ip: 106.14.150.229
     port: 22
     user: root
@@ -9,9 +8,10 @@ workspace:
     uploadPath: /root/test/
     startCmd:
       - "ls"
+      - "cd /root/test/"
     frontCmd:
       - "ls"
     backCmd:
-      - "ls"
+      - "ls -lh"
   datax:
   flink:
