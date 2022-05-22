@@ -12,6 +12,8 @@ public class Config {
   private String user;
   private String password;
   private String uploadPath;
-  private List<String> frontCommand;
-  private List<String> backCommand;
+  private List<String> startCmd;
+  private List<String> frontCmd;
+  private List<String> backCmd;
+
 }
