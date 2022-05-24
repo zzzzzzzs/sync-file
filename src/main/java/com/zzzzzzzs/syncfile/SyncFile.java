@@ -23,12 +23,9 @@ import java.util.Map;
 public class SyncFile {
 
   public static void execCmd(List<String> config, SSHUtil ssh, String name) {
-    synchronized (SSHUtil.class) {
-      System.out.println("++++++++++++++++++++++++++++++");
-      System.out.println(name + ":");
-      config.stream().filter(cmd -> cmd != null).forEach(cmd -> ssh.shellCmd(cmd));
-      System.out.println("------------------------------");
-    }
+    // 黄色输出
+    System.out.println("\033[33m" + "\n" + name + "\033[0m");
+    config.stream().filter(cmd -> cmd != null).forEach(cmd -> ssh.shellCmd(cmd));
   }
 
   public static void main(String[] args) throws FileNotFoundException {
@@ -67,7 +64,6 @@ public class SyncFile {
             workspaceConf.getPort(),
             workspaceConf.getPassword());
     ssh.connect();
-//    ssh.shellCmd("ls -lh");
     // start cmd
     execCmd(workspaceConf.getStartCmd(), ssh, "start cmd");
 
@@ -78,19 +74,17 @@ public class SyncFile {
             new SimpleWatcher() {
               @Override
               public void onModify(WatchEvent<?> event, Path currentPath) {
-                synchronized (SSHUtil.class) {
-                  try {
-                    // front cmd
-                    execCmd(workspaceConf.getFrontCmd(), ssh, "front cmd");
-                    // sync
-                    channelSftp.put(
-                        file.getAbsolutePath(), workspaceConf.getUploadPath() + file.getName());
-                    System.out.println("\033[32m" + "sync success" + "\033[0m");
-                    // back cmd
-                    execCmd(workspaceConf.getBackCmd(), ssh, "back cmd");
-                  } catch (SftpException e) {
-                    e.printStackTrace();
-                  }
+                try {
+                  // front cmd
+                  execCmd(workspaceConf.getFrontCmd(), ssh, "front cmd");
+                  // sync
+                  System.out.println("\033[32m" + "sync success" + "\033[0m");
+                  channelSftp.put(
+                      file.getAbsolutePath(), workspaceConf.getUploadPath() + file.getName());
+                  // back cmd
+                  execCmd(workspaceConf.getBackCmd(), ssh, "back cmd");
+                } catch (Exception e) {
+                  e.printStackTrace();
                 }
               }
             })

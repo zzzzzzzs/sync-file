@@ -6,14 +6,12 @@ import cn.hutool.core.io.watch.WatchMonitor;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpException;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +56,7 @@ public class SSHUtil {
       channel.setPty(true);
       channel.connect();
       os = channel.getOutputStream();
+      channel.setOutputStream(System.out);
       System.out.println("连接成功");
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -65,25 +64,23 @@ public class SSHUtil {
   }
 
   public void shellCmd(String... cmds) {
-    synchronized (SSHUtil.class) {
-      try {
-        for (String cmd : cmds) {
-          os.write((cmd + "\n").getBytes());
-          os.flush();
-          TimeUnit.MILLISECONDS.sleep(100);
-        }
-        byte[] buffer = new byte[1024];
-        while (in.available() > 0) {
-          int i = in.read(buffer, 0, 1024);
-          if (i < 0) {
-            break;
-          }
-          System.out.println(new String(buffer, 0, i));
-        }
+    try {
+      for (String cmd : cmds) {
+        os.write((cmd + "\r\n").getBytes());
+        os.flush();
         TimeUnit.MILLISECONDS.sleep(100);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
       }
+      // TODO 这里有问题
+      //  使用 channel.setOutputStream(System.out); 可以暂时解决
+      //      byte[] buffer = new byte[4096];
+      //      while (in.available() > 0) {
+      //        int len = in.read(buffer, 0, 4096);
+      //        if (len < 0) break;
+      //        System.out.println(new String(buffer, 0, len));
+      //        System.out.println("结束执行命令");
+      //      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
   // 测试
