@@ -1,17 +1,18 @@
 workspace:
   test:
     monitorFile: C:\Users\simeitol\Desktop\1.txt
-    ip: 106.14.150.229
-    port: 22
-    user: root
-    password: Hminde1314
-    uploadPath: /root/test/
+    ip: 47.98.208.71
+    port: 24260
+    user: zmt
+    password: 3z6D{f;7vJy~Nw^KXxpv
+    uploadPath: /home/zmt/
     startCmd:
-      - "ls"
-      - "cd /root/test/"
+      - "sudo su"
+      - "cd /root"
+      - "pwd"
     frontCmd:
-      - "ls"
+      - "rm -f /root/1.txt"
     backCmd:
-      - "ls -lh"
+      - "mv /home/zmt/1.txt /root"
   datax:
   flink:
