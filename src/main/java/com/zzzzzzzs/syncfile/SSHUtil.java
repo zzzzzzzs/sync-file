@@ -132,7 +132,7 @@ public class SSHUtil {
    * @throws SftpException
    * @throws Exception
    */
-  public void uploadMore(String directory, String sftpFileName, InputStream input)
+  public synchronized void uploadMore(String directory, String sftpFileName, InputStream input)
       throws SftpException {
     try {
       channelSftp.cd(directory);

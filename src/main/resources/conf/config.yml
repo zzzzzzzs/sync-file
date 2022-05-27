@@ -1,6 +1,6 @@
 workspace:
   test:
-    monitorFile: D:\11\1.txt
+    monitorFile: D:\DataX
     ip: 47.98.208.71
     port: 24260
     user: zmt
@@ -13,6 +13,6 @@ workspace:
     frontCmd:
 #      - "rm -f /root/1.txt"
     backCmd:
-#      - "rsync -avz /home/zmt/11 /root"
+      - "rsync -avz /home/zmt/11 /root"
   datax:
   flink:

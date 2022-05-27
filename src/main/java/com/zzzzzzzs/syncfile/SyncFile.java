@@ -71,7 +71,7 @@ public class SyncFile {
 
     System.out.println("初始化上传文件");
     List<File> files = FileUtil.loopFiles(workspaceConf.getMonitorFile());
-    files.forEach(
+    files.parallelStream().forEach(
         ele -> {
           try {
             String src;
