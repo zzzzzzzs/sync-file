@@ -4,9 +4,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.watch.SimpleWatcher;
 import cn.hutool.core.io.watch.WatchMonitor;
-import cn.hutool.extra.ssh.JschUtil;
-import com.jcraft.jsch.ChannelSftp;
+import cn.hutool.core.io.watch.watchers.DelayWatcher;
 import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -15,9 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 // TODO 在 SyncFile 中的 WatchMonitor 调用 SSHUtil 中的 shellCmd 方法，InputStream 不起作用
 public class SyncFile {
@@ -25,10 +23,12 @@ public class SyncFile {
   public static void execCmd(List<String> config, SSHUtil ssh, String name) {
     // 黄色输出
     System.out.println("\033[33m" + "\n" + name + "\033[0m");
-    config.stream().filter(cmd -> cmd != null).forEach(cmd -> ssh.shellCmd(cmd));
+    Optional.ofNullable(config).orElse(new ArrayList<>()).stream()
+        .filter(cmd -> null != cmd)
+        .forEach(cmd -> ssh.shellCmd(cmd));
   }
 
-  public static void main(String[] args) throws FileNotFoundException, JSchException {
+  public static void main(String[] args) throws FileNotFoundException {
     if (args.length < 1) {
       throw new IllegalArgumentException("请指定工作空间");
     }
@@ -69,27 +69,74 @@ public class SyncFile {
     // start cmd
     execCmd(workspaceConf.getStartCmd(), ssh, "start cmd");
 
-    ChannelSftp channelSftp = JschUtil.openSftp(ssh.getSession(), 5000);
+    System.out.println("初始化上传文件");
+    List<File> files = FileUtil.loopFiles(workspaceConf.getMonitorFile());
+    files.forEach(
+        ele -> {
+          try {
+            String src;
+            String dst;
+            if (file.isFile()) {
+              src = workspaceConf.getMonitorFile();
+              dst = workspaceConf.getUploadPath();
+            } else {
+              src = ele.getAbsolutePath();
+              dst =
+                  workspaceConf.getUploadPath()
+                      + ele.getParent().replace(file.getParent(), "").replace("\\", "/");
+            }
+            File srcFile = new File(src);
+            InputStream is = new FileInputStream(srcFile);
+            ssh.uploadMore(dst, ele.getName(), is);
+          } catch (FileNotFoundException e) {
+            e.printStackTrace();
+          } catch (SftpException e) {
+            e.printStackTrace();
+          }
+        });
+    System.out.println("初始化上传文件完成");
     System.out.println("start watch");
+
     WatchMonitor.createAll(
             file,
-            new SimpleWatcher() {
-              @Override
-              public void onModify(WatchEvent<?> event, Path currentPath) {
-                try {
-                  // front cmd
-                  execCmd(workspaceConf.getFrontCmd(), ssh, "front cmd");
-                  // sync
-                  channelSftp.put(
-                      file.getAbsolutePath(), workspaceConf.getUploadPath() + file.getName());
-                  System.out.println("\033[32m" + "sync success" + "\033[0m");
-                  // back cmd
-                  execCmd(workspaceConf.getBackCmd(), ssh, "back cmd");
-                } catch (Exception e) {
-                  e.printStackTrace();
-                }
-              }
-            })
+            new DelayWatcher(
+                new SimpleWatcher() {
+                  @Override
+                  public void onModify(WatchEvent<?> event, Path currentPath) {
+                    try {
+                      // front cmd
+                      execCmd(workspaceConf.getFrontCmd(), ssh, "front cmd");
+                      // sync
+                      String src;
+                      String dst;
+                      if (file.isFile()) {
+                        src = workspaceConf.getMonitorFile();
+                        dst = workspaceConf.getUploadPath();
+                      } else {
+                        src = currentPath + File.separator + event.context();
+                        dst =
+                            workspaceConf.getUploadPath()
+                                + currentPath
+                                    .toString()
+                                    .replace(file.getParent(), "")
+                                    .replace("\\", "/");
+                      }
+                      File srcFile = new File(src);
+                      InputStream is = new FileInputStream(srcFile);
+                      ssh.uploadMore(dst, event.context().toString(), is);
+                      System.out.println("上传：" + dst + "/" + event.context());
+                      System.out.println("\033[32m" + "sync success" + "\033[0m");
+                      // back cmd
+                      execCmd(workspaceConf.getBackCmd(), ssh, "back cmd");
+                    } catch (SftpException e) {
+                      e.printStackTrace();
+                    } catch (FileNotFoundException e) {
+                      e.printStackTrace();
+                    }
+                  }
+                },
+                1000))
+        .setMaxDepth(Integer.MAX_VALUE)
         .start();
   }
 }
