@@ -14,5 +14,3 @@ args[1] 指定conf目录（在idea中不需要设置）
 - [x] 多目录监控
 
 config.yml 中的 uploadPath 最后的分隔符必须带上，因为是远程的不能区别Windows和Linux
-
-命令现在不好用
