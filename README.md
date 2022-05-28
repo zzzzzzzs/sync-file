@@ -33,9 +33,9 @@ config.yml:
 ```yml
 workspace:
   test:
-    monitorFile: D:\DataX
+    monitorFile: C:\111
     ip: localhost
-    port: 22
+    port: 3316
     user: zs
     password: 111
     uploadPath: /home/zs/upload/
@@ -46,13 +46,30 @@ workspace:
     frontCmd:
 #      - "rm -f /root/1.txt"
     backCmd:
-      - "rsync -avz /home/zs/11 /root/upload/"
+     - "rsync -avz /home/zs/11 /root"
   datax:
   flink:
 ```
 
-
 在命令行下运行 `launch.bat test`
+
+![image-20220528184543166](assets/image-20220528184543166.png)
+
+然后就会自动同步 `C:\111` 路径下的所有文件。
+
+![image-20220528184705497](assets/image-20220528184705497.png)
+
+现在在 `C:\111` 下创建 `1.txt` 文件，输入内容然后保存，就会自动同步到Linux的指定目录下。
+
+![image-20220528184900702](assets/image-20220528184900702.png)
+
+![image-20220528185038229](assets/image-20220528185038229.png)
+
+并且`root` 中也同步过来了。
+
+![image-20220528185225389](assets/image-20220528185225389.png)
+
+
 
 # 目前规划
 
@@ -62,3 +79,6 @@ workspace:
 - [x] 文件夹监控上传
 - [ ] 目前仅支持文件上传到 Linux 下
 
+
+# 注意
+本程序使用 Java11 开发的，理论上 Java8 也可以运行。

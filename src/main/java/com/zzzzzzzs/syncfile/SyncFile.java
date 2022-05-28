@@ -17,7 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.*;
 
-// TODO 在 SyncFile 中的 WatchMonitor 调用 SSHUtil 中的 shellCmd 方法，InputStream 不起作用
+
 public class SyncFile {
 
   public static void execCmd(List<String> config, SSHUtil ssh, String name) {
